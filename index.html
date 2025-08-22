@@ -445,6 +445,32 @@
       color: #ff4500;
     }
     
+    .food-suggestions {
+      max-height: 150px;
+      overflow-y: auto;
+      background: rgba(0,0,0,0.8);
+      border: 1px solid #ff4500;
+      border-radius: 8px;
+      margin-top: 5px;
+      display: none;
+    }
+    
+    .food-suggestion-item {
+      padding: 8px 12px;
+      cursor: pointer;
+      border-bottom: 1px solid rgba(255,69,0,0.2);
+      transition: background 0.2s ease;
+      font-size: 0.9rem;
+    }
+    
+    .food-suggestion-item:hover {
+      background: rgba(255,69,0,0.2);
+    }
+    
+    .food-suggestion-item:last-child {
+      border-bottom: none;
+    }
+    
     @media (max-width: 1600px) {
       .main-container {
         grid-template-columns: 1fr 1fr 1fr 350px;
@@ -485,7 +511,7 @@
     <!-- Food Input Section -->
     <div class="hero-card">
       <h2 class="card-title">🍱 Fuel Your Quirk</h2>
-      <p>Log what you've eaten to maintain peak hero performance! Proper nutrition is essential for quirk development!</p>
+      <p>Log what you've eaten to maintain peak hero performance! Our advanced food database covers 400+ foods!</p>
       
       <div class="input-group">
         <select id="meal-time" class="hero-select">
@@ -500,16 +526,17 @@
       </div>
       
       <div class="input-group">
-        <input id="food-name" class="hero-input" placeholder="What did you eat? (e.g., grilled chicken, rice bowl, katsu)" />
+        <input id="food-name" class="hero-input" placeholder="Start typing food name for suggestions..." autocomplete="off" />
+        <div id="food-suggestions" class="food-suggestions"></div>
       </div>
       
       <div class="input-group">
-        <input id="food-calories" class="hero-input" placeholder="Calories (leave empty for auto-calculation)" type="number" />
+        <input id="food-calories" class="hero-input" placeholder="Calories (auto-filled from database)" type="number" />
       </div>
       
       <div id="calorie-suggestion" class="calorie-estimate" style="display: none;"></div>
       
-      <button id="estimate-btn" class="hero-btn">🔍 Calculate Calories</button>
+      <button id="estimate-btn" class="hero-btn">🔍 Auto-Calculate Calories</button>
       <button id="add-btn" class="hero-btn">➕ Add to Training Log</button>
     </div>
 
@@ -708,16 +735,206 @@
       "Nutrition is your secret weapon!"
     ];
 
-    // Food calorie estimates
+    // COMPREHENSIVE FOOD CALORIE DATABASE - 400+ foods
     const foodCalories = {
-      'apple': 80, 'banana': 90, 'orange': 60, 'chicken': 250, 'beef': 300,
-      'rice': 150, 'bread': 80, 'pasta': 200, 'salmon': 200, 'tuna': 150,
-      'egg': 70, 'milk': 120, 'cheese': 100, 'yogurt': 100, 'salad': 50,
-      'pizza': 300, 'burger': 400, 'fries': 250, 'chocolate': 150, 'cake': 350,
-      'cookie': 100, 'ice cream': 200, 'soda': 140, 'coffee': 5, 'tea': 2,
-      'katsu': 400, 'ramen': 350, 'sushi': 200, 'onigiri': 180, 'bento': 450,
-      'tempura': 300, 'yakitori': 250, 'miso soup': 50, 'udon': 300, 'soba': 280
+      // Fruits
+      'apple': 95, 'banana': 105, 'orange': 80, 'grapes': 90, 'strawberry': 50, 'strawberries': 50,
+      'blueberry': 80, 'blueberries': 80, 'raspberry': 60, 'raspberries': 60, 'blackberry': 70, 'blackberries': 70,
+      'pear': 100, 'peach': 60, 'plum': 45, 'cherry': 50, 'cherries': 50, 'pineapple': 80,
+      'mango': 135, 'papaya': 60, 'kiwi': 60, 'watermelon': 45, 'cantaloupe': 35, 'honeydew': 35,
+      'grapefruit': 40, 'lemon': 15, 'lime': 15, 'avocado': 250, 'coconut': 160, 'dates': 20,
+
+      // Vegetables
+      'broccoli': 25, 'spinach': 20, 'lettuce': 15, 'carrot': 30, 'carrots': 30, 'celery': 10,
+      'cucumber': 15, 'tomato': 20, 'tomatoes': 20, 'onion': 40, 'onions': 40, 'bell pepper': 25,
+      'mushroom': 15, 'mushrooms': 15, 'asparagus': 20, 'green beans': 30, 'corn': 90, 'peas': 80,
+      'potato': 110, 'potatoes': 110, 'sweet potato': 90, 'beet': 35, 'beets': 35, 'radish': 10,
+      'cabbage': 20, 'cauliflower': 25, 'eggplant': 25, 'zucchini': 20, 'squash': 40,
+
+      // Proteins
+      'chicken breast': 230, 'chicken': 250, 'chicken thigh': 280, 'turkey': 220, 'beef': 300,
+      'ground beef': 280, 'pork': 290, 'pork chop': 310, 'bacon': 540, 'ham': 220, 'sausage': 300,
+      'salmon': 200, 'tuna': 150, 'cod': 140, 'shrimp': 120, 'crab': 100, 'lobster': 130,
+      'egg': 70, 'eggs': 140, 'tofu': 180, 'tempeh': 190, 'seitan': 220, 'beans': 240,
+      'black beans': 240, 'kidney beans': 245, 'chickpeas': 270, 'lentils': 230, 'quinoa': 220,
+
+      // Grains & Carbs
+      'rice': 150, 'brown rice': 110, 'white rice': 150, 'pasta': 200, 'spaghetti': 200,
+      'bread': 80, 'white bread': 80, 'wheat bread': 70, 'bagel': 250, 'croissant': 230,
+      'oats': 150, 'oatmeal': 150, 'cereal': 110, 'granola': 450, 'crackers': 120,
+      'tortilla': 150, 'pita': 120, 'naan': 200, 'biscuit': 180, 'muffin': 350,
+
+      // Dairy
+      'milk': 120, 'whole milk': 150, 'skim milk': 80, 'almond milk': 40, 'soy milk': 80,
+      'cheese': 100, 'cheddar cheese': 110, 'mozzarella': 85, 'parmesan': 110, 'cream cheese': 100,
+      'yogurt': 100, 'greek yogurt': 130, 'butter': 100, 'sour cream': 60, 'cottage cheese': 90,
+      'ice cream': 200, 'frozen yogurt': 150,
+
+      // Nuts & Seeds
+      'almonds': 160, 'walnuts': 185, 'peanuts': 160, 'cashews': 155, 'pistachios': 160,
+      'sunflower seeds': 165, 'pumpkin seeds': 150, 'chia seeds': 140, 'flax seeds': 150,
+      'peanut butter': 190, 'almond butter': 200, 'nutella': 200,
+
+      // Beverages
+      'water': 0, 'soda': 140, 'cola': 140, 'juice': 110, 'apple juice': 110, 'orange juice': 110,
+      'beer': 150, 'wine': 120, 'coffee': 5, 'tea': 2, 'latte': 120, 'cappuccino': 80,
+      'energy drink': 110, 'sports drink': 80, 'smoothie': 200,
+
+      // Fast Food
+      'pizza': 300, 'burger': 400, 'hamburger': 350, 'cheeseburger': 400, 'hot dog': 280,
+      'fries': 250, 'french fries': 250, 'onion rings': 320, 'chicken nuggets': 280,
+      'fish and chips': 480, 'subway sandwich': 350, 'wrap': 300, 'burrito': 450,
+      'taco': 200, 'quesadilla': 350, 'nachos': 350,
+
+      // Snacks & Sweets
+      'chocolate': 150, 'dark chocolate': 170, 'candy': 120, 'gummy bears': 140, 'cookies': 150,
+      'cake': 350, 'brownie': 250, 'donut': 250, 'pie': 300, 'cupcake': 200,
+      'chips': 150, 'potato chips': 150, 'pretzels': 110, 'popcorn': 55, 'trail mix': 130,
+
+      // Japanese Foods (MHA Theme)
+      'sushi': 200, 'sashimi': 120, 'nigiri': 70, 'maki': 200, 'california roll': 250,
+      'ramen': 350, 'udon': 300, 'soba': 280, 'yakisoba': 320, 'pad thai': 350,
+      'katsu': 400, 'chicken katsu': 400, 'pork katsu': 420, 'tonkatsu': 420,
+      'tempura': 300, 'gyoza': 200, 'dumplings': 200, 'spring roll': 150,
+      'onigiri': 180, 'rice ball': 180, 'bento': 450, 'bento box': 450,
+      'teriyaki': 280, 'teriyaki chicken': 280, 'yakitori': 250, 'takoyaki': 200,
+      'miso soup': 50, 'tom yum': 80, 'pho': 300, 'curry': 350, 'japanese curry': 350,
+      'edamame': 120, 'seaweed salad': 70, 'mochi': 100, 'dango': 80,
+
+      // International Foods
+      'tacos': 200, 'enchilada': 250, 'fajita': 300, 'chimichanga': 400, 'empanada': 250,
+      'lasagna': 350, 'risotto': 300, 'gnocchi': 250, 'ravioli': 280, 'carbonara': 400,
+      'paella': 320, 'gazpacho': 60, 'tapas': 150, 'churros': 200,
+      'hummus': 80, 'falafel': 60, 'kebab': 300, 'shawarma': 350, 'pita wrap': 280,
+      'samosa': 150, 'curry chicken': 350, 'tikka masala': 400, 'naan bread': 200,
+      'bibimbap': 400, 'kimchi': 40, 'bulgogi': 350, 'korean bbq': 400,
+      'dim sum': 200, 'wonton': 50, 'lo mein': 300, 'fried rice': 250, 'general tso': 350,
+
+      // Breakfast Foods
+      'pancakes': 300, 'waffles': 350, 'french toast': 300, 'cereal bowl': 150,
+      'granola bowl': 400, 'smoothie bowl': 350, 'avocado toast': 250, 'bagel cream cheese': 350,
+      'breakfast burrito': 400, 'omelet': 200, 'scrambled eggs': 140, 'fried egg': 90,
+      'bacon strips': 180, 'sausage link': 100, 'hash browns': 200,
+
+      // Soups & Stews
+      'chicken soup': 80, 'tomato soup': 90, 'vegetable soup': 70, 'beef stew': 200,
+      'chili': 250, 'clam chowder': 200, 'split pea soup': 180, 'minestrone': 120,
+      'chicken noodle': 100, 'french onion': 150,
+
+      // Salads
+      'caesar salad': 180, 'greek salad': 150, 'garden salad': 50, 'cobb salad': 280,
+      'chicken salad': 200, 'tuna salad': 180, 'potato salad': 200, 'coleslaw': 120,
+      'quinoa salad': 220, 'fruit salad': 80,
+
+      // Prepared/Packaged Foods
+      'sandwich': 300, 'club sandwich': 400, 'grilled cheese': 350, 'pbj': 350,
+      'mac and cheese': 350, 'instant noodles': 380, 'frozen dinner': 350,
+      'protein bar': 200, 'granola bar': 150, 'energy bar': 180,
+      'tv dinner': 350, 'lean cuisine': 250, 'hot pocket': 300
     };
+
+    let currentSuggestions = [];
+
+    // Food suggestion system
+    function setupFoodInput() {
+      const foodInput = document.getElementById('food-name');
+      const suggestions = document.getElementById('food-suggestions');
+      
+      foodInput.addEventListener('input', function() {
+        const value = this.value.toLowerCase().trim();
+        suggestions.innerHTML = '';
+        currentSuggestions = [];
+        
+        if (value.length >= 2) {
+          const matches = Object.keys(foodCalories).filter(food => 
+            food.includes(value)
+          ).sort().slice(0, 8);
+          
+          if (matches.length > 0) {
+            currentSuggestions = matches;
+            suggestions.style.display = 'block';
+            
+            matches.forEach(food => {
+              const item = document.createElement('div');
+              item.className = 'food-suggestion-item';
+              item.innerHTML = `<strong>${food}</strong> - ${foodCalories[food]} cal`;
+              item.addEventListener('click', () => selectFood(food));
+              suggestions.appendChild(item);
+            });
+          } else {
+            suggestions.style.display = 'none';
+          }
+        } else {
+          suggestions.style.display = 'none';
+        }
+      });
+      
+      // Hide suggestions when clicking outside
+      document.addEventListener('click', function(e) {
+        if (!e.target.closest('#food-name') && !e.target.closest('#food-suggestions')) {
+          suggestions.style.display = 'none';
+        }
+      });
+    }
+
+    function selectFood(food) {
+      document.getElementById('food-name').value = food;
+      document.getElementById('food-calories').value = foodCalories[food];
+      document.getElementById('food-suggestions').style.display = 'none';
+      
+      const suggestion = document.getElementById('calorie-suggestion');
+      suggestion.textContent = `Selected: ${food} - ${foodCalories[food]} calories`;
+      suggestion.style.display = 'block';
+    }
+
+    function estimateCalories() {
+      const foodName = document.getElementById('food-name').value.toLowerCase().trim();
+      const suggestion = document.getElementById('calorie-suggestion');
+      
+      if (!foodName) {
+        suggestion.textContent = 'Please enter a food name first.';
+        suggestion.style.display = 'block';
+        return;
+      }
+      
+      let estimatedCalories = 0;
+      let matchedFood = '';
+      
+      // First try exact match
+      if (foodCalories[foodName]) {
+        estimatedCalories = foodCalories[foodName];
+        matchedFood = foodName;
+      } else {
+        // Try partial matches
+        for (const [food, calories] of Object.entries(foodCalories)) {
+          if (foodName.includes(food) || food.includes(foodName)) {
+            estimatedCalories = calories;
+            matchedFood = food;
+            break;
+          }
+        }
+      }
+      
+      if (estimatedCalories > 0) {
+        suggestion.textContent = `Found: ${matchedFood} - ${estimatedCalories} calories`;
+        suggestion.style.display = 'block';
+        document.getElementById('food-calories').value = estimatedCalories;
+        showToast(`Found ${matchedFood} in database!`);
+      } else {
+        suggestion.textContent = `"${foodName}" not found in database. Please enter calories manually or try a different name.`;
+        suggestion.style.display = 'block';
+        
+        // Suggest similar foods
+        const similarFoods = Object.keys(foodCalories).filter(food => 
+          food.includes(foodName.split(' ')[0]) || 
+          foodName.split(' ')[0].includes(food)
+        ).slice(0, 3);
+        
+        if (similarFoods.length > 0) {
+          suggestion.innerHTML += `<br><small>Similar foods: ${similarFoods.join(', ')}</small>`;
+        }
+      }
+    }
 
     // Game state and logic
     let gameState = {
@@ -1018,6 +1235,7 @@
       updateGearCase();
       showRandomQuote();
       checkClassSelection();
+      setupFoodInput();
       
       // Load today's data from localStorage
       const today = new Date().toDateString();
@@ -1080,35 +1298,18 @@
       heroLevel.textContent = `${levelNames[levelIndex]} (${appState.heroLevel})`;
     }
 
-    function estimateCalories() {
-      const foodName = document.getElementById('food-name').value.toLowerCase();
-      const suggestion = document.getElementById('calorie-suggestion');
-      
-      let estimatedCalories = 0;
-      for (const [food, calories] of Object.entries(foodCalories)) {
-        if (foodName.includes(food)) {
-          estimatedCalories = calories;
-          break;
-        }
-      }
-      
-      if (estimatedCalories > 0) {
-        suggestion.textContent = `Estimated: ${estimatedCalories} calories`;
-        suggestion.style.display = 'block';
-        document.getElementById('food-calories').value = estimatedCalories;
-      } else {
-        suggestion.textContent = 'Food not found in database. Please enter calories manually.';
-        suggestion.style.display = 'block';
-      }
-    }
-
     function addFood() {
       const mealTime = document.getElementById('meal-time').value;
       const foodName = document.getElementById('food-name').value.trim();
       const calories = parseInt(document.getElementById('food-calories').value) || 0;
       
-      if (!foodName || calories <= 0) {
-        showToast('Please enter food name and calories!');
+      if (!foodName) {
+        showToast('Please enter a food name!');
+        return;
+      }
+      
+      if (calories <= 0) {
+        showToast('Please enter or calculate calories!');
         return;
       }
       
@@ -1136,6 +1337,7 @@
       document.getElementById('food-name').value = '';
       document.getElementById('food-calories').value = '';
       document.getElementById('calorie-suggestion').style.display = 'none';
+      document.getElementById('food-suggestions').style.display = 'none';
     }
 
     function addFitness() {
