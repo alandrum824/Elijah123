@@ -320,42 +320,66 @@
     }
     
     /* Hero Training Game Styles */
-    .game-cell {
+    .game-board-container {
       display: inline-block;
-      width: 40px;
-      height: 40px;
-      margin: 2px;
-      text-align: center;
-      line-height: 40px;
-      font-size: 1.8rem;
+      background: rgba(0,0,0,0.5);
+      padding: 15px;
+      border-radius: 10px;
+      border: 2px solid #ff4500;
+    }
+    
+    .game-row {
+      display: flex;
+      margin: 0;
+      padding: 0;
+    }
+    
+    .game-cell {
+      width: 35px;
+      height: 35px;
+      margin: 1px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
       background: linear-gradient(145deg, rgba(255,255,255,0.2), rgba(255,255,255,0.1));
       border: 2px solid rgba(255,69,0,0.3);
-      border-radius: 8px;
+      border-radius: 6px;
       cursor: pointer;
-      transition: all 0.3s ease;
+      transition: all 0.2s ease;
       user-select: none;
     }
     
     .game-cell:hover {
       transform: scale(1.1);
       border-color: rgba(255,69,0,0.8);
-      box-shadow: 0 0 15px rgba(255,69,0,0.5);
+      box-shadow: 0 0 10px rgba(255,69,0,0.5);
     }
     
     .game-cell.selected {
       background: linear-gradient(45deg, #ff4500, #ffed4e);
       border-color: #ff4500;
-      box-shadow: 0 0 20px rgba(255,69,0,0.8);
+      box-shadow: 0 0 15px rgba(255,69,0,0.8);
+      transform: scale(1.1);
     }
     
     .game-cell.matched {
-      animation: heroMatch 0.8s ease-in-out forwards;
+      animation: heroMatch 0.6s ease-in-out forwards;
+    }
+    
+    .game-cell.falling {
+      animation: fall 0.5s ease-in forwards;
     }
     
     @keyframes heroMatch {
       0% { transform: scale(1); }
-      50% { transform: scale(1.3); background: #ff6b6b; }
+      50% { transform: scale(1.3); background: linear-gradient(45deg, #ff6b6b, #ffd93d); }
       100% { transform: scale(0); opacity: 0; }
+    }
+    
+    @keyframes fall {
+      from { transform: translateY(-100px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
     }
     
     .hero-quote {
@@ -444,6 +468,7 @@
         grid-template-columns: 1fr;
       }
       h1 { font-size: 2rem; }
+      .game-cell { width: 30px; height: 30px; font-size: 1.2rem; }
     }
   </style>
 </head>
@@ -554,19 +579,19 @@
     <!-- Hero Training Game -->
     <div class="hero-card">
       <h2 class="card-title">🎮 Hero Symbol Match</h2>
-      <p>Match 3+ hero symbols to earn points!</p>
+      <p>Match 3+ hero symbols to earn points! Swap adjacent symbols to create matches.</p>
       <div style="text-align: center; margin-bottom: 15px;">
         <div><strong>Score:</strong> <span id="game-score">0</span> | <strong>Moves:</strong> <span id="moves-left">15</span></div>
       </div>
       
       <div style="text-align: center;">
-        <div id="game-board" style="display: inline-block; background: rgba(0,0,0,0.5); padding: 15px; border-radius: 10px; border: 2px solid #ff4500;">
+        <div id="game-board" class="game-board-container">
           <!-- Game will load here -->
         </div>
         
         <div style="margin-top: 15px;">
-          <button id="new-game" class="hero-btn" onclick="initGame()">🆕 New Game</button>
-          <button class="hero-btn" onclick="getGameHint()">💡 Hint (5 pts)</button>
+          <button id="new-game" class="hero-btn">🆕 New Game</button>
+          <button id="game-hint" class="hero-btn">💡 Hint (5 pts)</button>
         </div>
         <div id="game-status" style="color: #ff4500; margin-top: 10px; font-weight: bold;">Click New Game to start!</div>
       </div>
@@ -693,6 +718,298 @@
       'katsu': 400, 'ramen': 350, 'sushi': 200, 'onigiri': 180, 'bento': 450,
       'tempura': 300, 'yakitori': 250, 'miso soup': 50, 'udon': 300, 'soba': 280
     };
+
+    // Game state and logic
+    let gameState = {
+      board: [],
+      score: 0,
+      movesLeft: 15,
+      selectedCell: null,
+      gameActive: false,
+      boardSize: 8
+    };
+
+    const gameSymbols = ['💥', '⚡', '🔥', '💪', '🌟', '⭐'];
+
+    function initGame() {
+      gameState = {
+        board: [],
+        score: 0,
+        movesLeft: 15,
+        selectedCell: null,
+        gameActive: true,
+        boardSize: 8
+      };
+      
+      // Create initial board without matches
+      do {
+        gameState.board = [];
+        for (let i = 0; i < gameState.boardSize * gameState.boardSize; i++) {
+          gameState.board.push(gameSymbols[Math.floor(Math.random() * gameSymbols.length)]);
+        }
+      } while (findMatches().length > 0);
+      
+      renderGame();
+      updateGameDisplay();
+      document.getElementById('game-status').textContent = 'Game started! Make your first move!';
+    }
+
+    function renderGame() {
+      const board = document.getElementById('game-board');
+      board.innerHTML = '';
+      
+      for (let row = 0; row < gameState.boardSize; row++) {
+        const rowDiv = document.createElement('div');
+        rowDiv.className = 'game-row';
+        
+        for (let col = 0; col < gameState.boardSize; col++) {
+          const index = row * gameState.boardSize + col;
+          const cell = document.createElement('div');
+          cell.className = 'game-cell';
+          cell.textContent = gameState.board[index];
+          cell.dataset.index = index;
+          cell.addEventListener('click', () => selectCell(index));
+          rowDiv.appendChild(cell);
+        }
+        
+        board.appendChild(rowDiv);
+      }
+    }
+
+    function selectCell(index) {
+      if (!gameState.gameActive) return;
+      
+      const cells = document.querySelectorAll('.game-cell');
+      
+      if (gameState.selectedCell === null) {
+        gameState.selectedCell = index;
+        cells[index].classList.add('selected');
+      } else if (gameState.selectedCell === index) {
+        cells[index].classList.remove('selected');
+        gameState.selectedCell = null;
+      } else {
+        // Check if cells are adjacent
+        if (isAdjacent(gameState.selectedCell, index)) {
+          // Remove selection highlight
+          cells[gameState.selectedCell].classList.remove('selected');
+          
+          // Swap cells
+          const temp = gameState.board[gameState.selectedCell];
+          gameState.board[gameState.selectedCell] = gameState.board[index];
+          gameState.board[index] = temp;
+          
+          // Check if swap creates matches
+          const matches = findMatches();
+          if (matches.length > 0) {
+            gameState.movesLeft--;
+            renderGame();
+            setTimeout(() => {
+              processMatches();
+            }, 300);
+          } else {
+            // Swap back if no matches
+            gameState.board[index] = gameState.board[gameState.selectedCell];
+            gameState.board[gameState.selectedCell] = temp;
+            document.getElementById('game-status').textContent = 'No matches! Try a different move.';
+          }
+          
+          gameState.selectedCell = null;
+          updateGameDisplay();
+          
+          if (gameState.movesLeft <= 0) {
+            setTimeout(endGame, 1000);
+          }
+        } else {
+          cells[gameState.selectedCell].classList.remove('selected');
+          gameState.selectedCell = index;
+          cells[index].classList.add('selected');
+        }
+      }
+    }
+
+    function isAdjacent(index1, index2) {
+      const row1 = Math.floor(index1 / gameState.boardSize);
+      const col1 = index1 % gameState.boardSize;
+      const row2 = Math.floor(index2 / gameState.boardSize);
+      const col2 = index2 % gameState.boardSize;
+      
+      return (Math.abs(row1 - row2) === 1 && col1 === col2) ||
+             (Math.abs(col1 - col2) === 1 && row1 === row2);
+    }
+
+    function findMatches() {
+      const matches = new Set();
+      
+      // Check horizontal matches
+      for (let row = 0; row < gameState.boardSize; row++) {
+        let count = 1;
+        let current = gameState.board[row * gameState.boardSize];
+        
+        for (let col = 1; col < gameState.boardSize; col++) {
+          const index = row * gameState.boardSize + col;
+          if (gameState.board[index] === current) {
+            count++;
+          } else {
+            if (count >= 3) {
+              for (let i = col - count; i < col; i++) {
+                matches.add(row * gameState.boardSize + i);
+              }
+            }
+            current = gameState.board[index];
+            count = 1;
+          }
+        }
+        
+        if (count >= 3) {
+          for (let i = gameState.boardSize - count; i < gameState.boardSize; i++) {
+            matches.add(row * gameState.boardSize + i);
+          }
+        }
+      }
+      
+      // Check vertical matches
+      for (let col = 0; col < gameState.boardSize; col++) {
+        let count = 1;
+        let current = gameState.board[col];
+        
+        for (let row = 1; row < gameState.boardSize; row++) {
+          const index = row * gameState.boardSize + col;
+          if (gameState.board[index] === current) {
+            count++;
+          } else {
+            if (count >= 3) {
+              for (let i = row - count; i < row; i++) {
+                matches.add(i * gameState.boardSize + col);
+              }
+            }
+            current = gameState.board[index];
+            count = 1;
+          }
+        }
+        
+        if (count >= 3) {
+          for (let i = gameState.boardSize - count; i < gameState.boardSize; i++) {
+            matches.add(i * gameState.boardSize + col);
+          }
+        }
+      }
+      
+      return Array.from(matches);
+    }
+
+    function processMatches() {
+      const matches = findMatches();
+      if (matches.length === 0) return;
+      
+      gameState.score += matches.length * 10;
+      document.getElementById('game-status').textContent = `Great! ${matches.length} symbols matched!`;
+      
+      // Animate matched cells
+      const cells = document.querySelectorAll('.game-cell');
+      matches.forEach(index => {
+        cells[index].classList.add('matched');
+      });
+      
+      setTimeout(() => {
+        // Remove matched symbols and apply gravity
+        applyGravity(matches);
+        renderGame();
+        
+        // Check for chain reactions
+        setTimeout(() => {
+          const newMatches = findMatches();
+          if (newMatches.length > 0) {
+            processMatches();
+          }
+        }, 600);
+      }, 600);
+    }
+
+    function applyGravity(matchedIndices) {
+      const newBoard = [...gameState.board];
+      
+      for (let col = 0; col < gameState.boardSize; col++) {
+        // Collect non-matched symbols in this column
+        const columnSymbols = [];
+        for (let row = gameState.boardSize - 1; row >= 0; row--) {
+          const index = row * gameState.boardSize + col;
+          if (!matchedIndices.includes(index)) {
+            columnSymbols.push(gameState.board[index]);
+          }
+        }
+        
+        // Fill column from bottom up
+        for (let row = gameState.boardSize - 1; row >= 0; row--) {
+          const index = row * gameState.boardSize + col;
+          if (columnSymbols.length > 0) {
+            newBoard[index] = columnSymbols.shift();
+          } else {
+            // Add new random symbol at top
+            newBoard[index] = gameSymbols[Math.floor(Math.random() * gameSymbols.length)];
+          }
+        }
+      }
+      
+      gameState.board = newBoard;
+    }
+
+    function updateGameDisplay() {
+      document.getElementById('game-score').textContent = gameState.score;
+      document.getElementById('moves-left').textContent = gameState.movesLeft;
+    }
+
+    function endGame() {
+      gameState.gameActive = false;
+      const bonusPoints = Math.floor(gameState.score / 10);
+      appState.heroPoints += bonusPoints;
+      updateDisplay();
+      saveData();
+      
+      document.getElementById('game-status').textContent = 
+        `Game Over! Final Score: ${gameState.score}. Earned ${bonusPoints} hero points!`;
+      showToast(`Game complete! +${bonusPoints} hero points!`);
+    }
+
+    function getGameHint() {
+      if (appState.heroPoints < 5) {
+        showToast('Need 5 hero points for a hint!');
+        return;
+      }
+      
+      appState.heroPoints -= 5;
+      updateDisplay();
+      saveData();
+      
+      // Look for possible moves
+      let hintGiven = false;
+      for (let i = 0; i < gameState.board.length && !hintGiven; i++) {
+        for (let j = i + 1; j < gameState.board.length && !hintGiven; j++) {
+          if (isAdjacent(i, j)) {
+            // Temporarily swap
+            const temp = gameState.board[i];
+            gameState.board[i] = gameState.board[j];
+            gameState.board[j] = temp;
+            
+            const matches = findMatches();
+            
+            // Swap back
+            gameState.board[j] = gameState.board[i];
+            gameState.board[i] = temp;
+            
+            if (matches.length > 0) {
+              const row1 = Math.floor(i / gameState.boardSize);
+              const col1 = i % gameState.boardSize;
+              showToast(`Try swapping symbols at row ${row1 + 1}, col ${col1 + 1}!`);
+              hintGiven = true;
+            }
+          }
+        }
+      }
+      
+      if (!hintGiven) {
+        showToast('Look for symbols that can form lines of 3 or more!');
+      }
+    }
 
     // Initialize app
     function initApp() {
@@ -1039,205 +1356,14 @@
       }, 3000);
     }
 
-    // Game implementation
-    let gameState = {
-      board: [],
-      score: 0,
-      movesLeft: 15,
-      selectedCell: null,
-      gameActive: false
-    };
-
-    const gameSymbols = ['💥', '⚡', '🔥', '💪', '🌟', '⭐'];
-
-    function initGame() {
-      gameState = {
-        board: [],
-        score: 0,
-        movesLeft: 15,
-        selectedCell: null,
-        gameActive: true
-      };
-      
-      // Create 8x8 board
-      for (let i = 0; i < 64; i++) {
-        gameState.board.push(gameSymbols[Math.floor(Math.random() * gameSymbols.length)]);
-      }
-      
-      renderGame();
-      updateGameDisplay();
-    }
-
-    function renderGame() {
-      const board = document.getElementById('game-board');
-      board.innerHTML = '';
-      
-      for (let i = 0; i < 64; i++) {
-        const cell = document.createElement('div');
-        cell.className = 'game-cell';
-        cell.textContent = gameState.board[i];
-        cell.onclick = () => selectCell(i);
-        board.appendChild(cell);
-        
-        if ((i + 1) % 8 === 0) {
-          board.appendChild(document.createElement('br'));
-        }
-      }
-    }
-
-    function selectCell(index) {
-      if (!gameState.gameActive) return;
-      
-      const cells = document.querySelectorAll('.game-cell');
-      
-      if (gameState.selectedCell === null) {
-        gameState.selectedCell = index;
-        cells[index].classList.add('selected');
-      } else if (gameState.selectedCell === index) {
-        cells[index].classList.remove('selected');
-        gameState.selectedCell = null;
-      } else {
-        // Swap cells if adjacent
-        if (isAdjacent(gameState.selectedCell, index)) {
-          swapCells(gameState.selectedCell, index);
-          cells[gameState.selectedCell].classList.remove('selected');
-          gameState.selectedCell = null;
-          gameState.movesLeft--;
-          
-          setTimeout(() => {
-            checkMatches();
-            updateGameDisplay();
-            
-            if (gameState.movesLeft <= 0) {
-              endGame();
-            }
-          }, 300);
-        } else {
-          cells[gameState.selectedCell].classList.remove('selected');
-          gameState.selectedCell = index;
-          cells[index].classList.add('selected');
-        }
-      }
-    }
-
-    function isAdjacent(index1, index2) {
-      const row1 = Math.floor(index1 / 8);
-      const col1 = index1 % 8;
-      const row2 = Math.floor(index2 / 8);
-      const col2 = index2 % 8;
-      
-      return (Math.abs(row1 - row2) === 1 && col1 === col2) ||
-             (Math.abs(col1 - col2) === 1 && row1 === row2);
-    }
-
-    function swapCells(index1, index2) {
-      const temp = gameState.board[index1];
-      gameState.board[index1] = gameState.board[index2];
-      gameState.board[index2] = temp;
-      renderGame();
-    }
-
-    function checkMatches() {
-      const matches = findMatches();
-      if (matches.length > 0) {
-        gameState.score += matches.length * 10;
-        
-        // Animate matched cells
-        matches.forEach(index => {
-          const cells = document.querySelectorAll('.game-cell');
-          cells[index].classList.add('matched');
-        });
-        
-        setTimeout(() => {
-          // Remove matched symbols and drop new ones
-          matches.forEach(index => {
-            gameState.board[index] = gameSymbols[Math.floor(Math.random() * gameSymbols.length)];
-          });
-          renderGame();
-          
-          // Check for chain reactions
-          setTimeout(() => checkMatches(), 500);
-        }, 800);
-      }
-    }
-
-    function findMatches() {
-      const matches = new Set();
-      
-      // Check horizontal matches
-      for (let row = 0; row < 8; row++) {
-        for (let col = 0; col <= 5; col++) {
-          const index = row * 8 + col;
-          const symbol = gameState.board[index];
-          if (symbol === gameState.board[index + 1] && symbol === gameState.board[index + 2]) {
-            matches.add(index);
-            matches.add(index + 1);
-            matches.add(index + 2);
-          }
-        }
-      }
-      
-      // Check vertical matches
-      for (let col = 0; col < 8; col++) {
-        for (let row = 0; row <= 5; row++) {
-          const index = row * 8 + col;
-          const symbol = gameState.board[index];
-          if (symbol === gameState.board[index + 8] && symbol === gameState.board[index + 16]) {
-            matches.add(index);
-            matches.add(index + 8);
-            matches.add(index + 16);
-          }
-        }
-      }
-      
-      return Array.from(matches);
-    }
-
-    function updateGameDisplay() {
-      document.getElementById('game-score').textContent = gameState.score;
-      document.getElementById('moves-left').textContent = gameState.movesLeft;
-      
-      if (gameState.score > 0) {
-        document.getElementById('game-status').textContent = `Great job! Score: ${gameState.score}`;
-      }
-    }
-
-    function endGame() {
-      gameState.gameActive = false;
-      const bonusPoints = Math.floor(gameState.score / 10);
-      appState.heroPoints += bonusPoints;
-      updateDisplay();
-      saveData();
-      
-      document.getElementById('game-status').textContent = 
-        `Game Over! Final Score: ${gameState.score}. Earned ${bonusPoints} hero points!`;
-      showToast(`Game complete! +${bonusPoints} hero points!`);
-    }
-
-    function getGameHint() {
-      if (appState.heroPoints < 5) {
-        showToast('Need 5 hero points for a hint!');
-        return;
-      }
-      
-      appState.heroPoints -= 5;
-      updateDisplay();
-      saveData();
-      
-      const matches = findMatches();
-      if (matches.length > 0) {
-        showToast('Look for matching symbols in rows or columns!');
-      } else {
-        showToast('Try swapping adjacent symbols to create matches!');
-      }
-    }
-
     // Event listeners
     document.getElementById('estimate-btn').addEventListener('click', estimateCalories);
     document.getElementById('add-btn').addEventListener('click', addFood);
     document.getElementById('add-fitness-btn').addEventListener('click', addFitness);
     document.getElementById('clear-log').addEventListener('click', clearLog);
     document.getElementById('daily-bonus').addEventListener('click', claimDailyBonus);
+    document.getElementById('new-game').addEventListener('click', initGame);
+    document.getElementById('game-hint').addEventListener('click', getGameHint);
 
     // Class selection
     document.querySelectorAll('.house-btn').forEach(btn => {
