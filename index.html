@@ -1,0 +1,1263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>U.A. Hero Training Tracker 💥</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Roboto:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: linear-gradient(135deg, #1a472a 0%, #2d5a87 50%, #8b1538 100%);
+      color: #fff;
+      font-family: 'Roboto', sans-serif;
+      min-height: 100vh;
+      animation: fadeIn 1s ease-in;
+    }
+    
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes heroGlow { 0%, 100% { transform: scale(1) rotate(0deg); } 50% { transform: scale(1.1) rotate(5deg); } }
+    @keyframes powerUp { 0%, 100% { box-shadow: 0 0 20px rgba(255, 69, 0, 0.3); } 50% { box-shadow: 0 0 30px rgba(255, 69, 0, 0.6); } }
+    @keyframes heroEntry { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(-10px); } }
+    
+    .cityscape {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+    
+    .building {
+      position: absolute;
+      width: 2px;
+      height: 2px;
+      background: #fff;
+      border-radius: 50%;
+      animation: cityLights 2s infinite;
+    }
+    
+    @keyframes cityLights { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+    
+    header {
+      position: relative;
+      z-index: 10;
+      padding: 30px 20px;
+      text-align: center;
+      background: linear-gradient(135deg, #ff4500, #00bfff, #228b22);
+      border-bottom: 3px solid #ff4500;
+      box-shadow: 0 0 30px rgba(0,0,0,0.5);
+    }
+    
+    h1 {
+      font-family: 'Orbitron', sans-serif;
+      margin: 0;
+      font-weight: 900;
+      font-size: 3rem;
+      text-shadow: 3px 3px 6px rgba(0,0,0,0.5);
+      background: linear-gradient(45deg, #ff4500, #fff, #00bfff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .subtitle {
+      font-size: 1.2rem;
+      margin-top: 10px;
+      font-style: italic;
+      color: #ff4500;
+    }
+    
+    .main-container {
+      position: relative;
+      z-index: 10;
+      max-width: 1800px;
+      margin: 30px auto;
+      padding: 0 20px 150px;
+      display: grid;
+      gap: 25px;
+      grid-template-columns: 1fr 1fr 1fr 350px 350px;
+    }
+    
+    .hero-card {
+      background: linear-gradient(145deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+      border: 2px solid rgba(255, 69, 0, 0.3);
+      border-radius: 20px;
+      padding: 25px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .hero-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(45deg, transparent, rgba(255,69,0,0.1), transparent);
+      transform: rotate(-45deg);
+      transition: all 0.6s ease;
+      opacity: 0;
+    }
+    
+    .hero-card:hover::before {
+      opacity: 1;
+      transform: rotate(-45deg) translate(50%, 50%);
+    }
+    
+    .hero-card:hover {
+      transform: translateY(-5px);
+      border-color: rgba(255, 69, 0, 0.6);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    }
+    
+    .card-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.5rem;
+      color: #ff4500;
+      margin: 0 0 20px 0;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    }
+    
+    .input-group {
+      margin-bottom: 15px;
+    }
+    
+    .hero-input, .hero-select {
+      width: 100%;
+      padding: 12px 15px;
+      border: 2px solid rgba(255, 69, 0, 0.3);
+      border-radius: 10px;
+      background: rgba(0,0,0,0.3);
+      color: #fff;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+    }
+    
+    .hero-input:focus, .hero-select:focus {
+      outline: none;
+      border-color: #ff4500;
+      box-shadow: 0 0 15px rgba(255, 69, 0, 0.4);
+    }
+    
+    .hero-btn {
+      padding: 12px 20px;
+      border: none;
+      border-radius: 10px;
+      background: linear-gradient(45deg, #ff4500, #00bfff);
+      color: #fff;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin: 5px;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .hero-btn::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      background: rgba(255,255,255,0.2);
+      border-radius: 50%;
+      transition: all 0.3s ease;
+      transform: translate(-50%, -50%);
+    }
+    
+    .hero-btn:hover::before {
+      width: 300px;
+      height: 300px;
+    }
+    
+    .hero-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    }
+    
+    .training-log {
+      max-height: 400px;
+      overflow-y: auto;
+      padding-right: 10px;
+    }
+    
+    .meal-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px;
+      margin-bottom: 10px;
+      background: rgba(255,69,0,0.1);
+      border: 1px solid rgba(255,69,0,0.3);
+      border-radius: 10px;
+      transition: all 0.3s ease;
+      animation: heroEntry 0.5s ease;
+    }
+    
+    .meal-item:hover {
+      background: rgba(255,69,0,0.2);
+      transform: translateX(5px);
+    }
+    
+    .quirk-meter {
+      height: 25px;
+      background: linear-gradient(90deg, #000, #333);
+      border-radius: 15px;
+      overflow: hidden;
+      margin: 15px 0;
+      border: 2px solid #ff4500;
+      position: relative;
+    }
+    
+    .quirk-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #ff4500, #00bfff, #228b22);
+      transition: width 0.8s ease;
+      border-radius: 15px;
+      position: relative;
+    }
+    
+    .quirk-fill::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+      animation: heroShimmer 2s infinite;
+    }
+    
+    @keyframes heroShimmer {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+    
+    .status-good { color: #4CAF50; font-weight: bold; }
+    .status-warning { color: #FF9800; font-weight: bold; }
+    .status-danger { color: #F44336; font-weight: bold; }
+    
+    .hero-gear-case {
+      background: linear-gradient(145deg, rgba(0,0,0,0.4), rgba(0,0,0,0.2));
+      border: 3px solid #ff4500;
+      border-radius: 15px;
+      padding: 20px;
+      margin-top: 20px;
+    }
+    
+    .gear-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+      gap: 15px;
+      margin-top: 15px;
+    }
+    
+    .gear-item {
+      text-align: center;
+      padding: 15px;
+      background: rgba(255,69,0,0.1);
+      border: 2px solid rgba(255,69,0,0.3);
+      border-radius: 10px;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+    
+    .gear-item:hover {
+      transform: scale(1.05);
+      background: rgba(255,69,0,0.2);
+      animation: powerUp 1s infinite;
+    }
+    
+    .gear-emoji {
+      font-size: 2.5rem;
+      display: block;
+      margin-bottom: 8px;
+      filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.5));
+    }
+    
+    .gear-owned .gear-emoji {
+      animation: heroGlow 2s infinite;
+    }
+    
+    .gear-cost {
+      font-size: 0.9rem;
+      color: #ff4500;
+      font-weight: bold;
+    }
+    
+    .gear-owned .gear-cost {
+      color: #4CAF50;
+    }
+    
+    .owned-display {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+      gap: 10px;
+      margin-top: 15px;
+    }
+    
+    .owned-gear {
+      text-align: center;
+      padding: 10px;
+      background: linear-gradient(45deg, #ff4500, #ffed4e);
+      border-radius: 10px;
+      color: #000;
+      font-weight: bold;
+      box-shadow: 0 5px 15px rgba(255,69,0,0.3);
+      animation: powerUp 3s infinite;
+    }
+    
+    /* Hero Training Game Styles */
+    .game-cell {
+      display: inline-block;
+      width: 40px;
+      height: 40px;
+      margin: 2px;
+      text-align: center;
+      line-height: 40px;
+      font-size: 1.8rem;
+      background: linear-gradient(145deg, rgba(255,255,255,0.2), rgba(255,255,255,0.1));
+      border: 2px solid rgba(255,69,0,0.3);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      user-select: none;
+    }
+    
+    .game-cell:hover {
+      transform: scale(1.1);
+      border-color: rgba(255,69,0,0.8);
+      box-shadow: 0 0 15px rgba(255,69,0,0.5);
+    }
+    
+    .game-cell.selected {
+      background: linear-gradient(45deg, #ff4500, #ffed4e);
+      border-color: #ff4500;
+      box-shadow: 0 0 20px rgba(255,69,0,0.8);
+    }
+    
+    .game-cell.matched {
+      animation: heroMatch 0.8s ease-in-out forwards;
+    }
+    
+    @keyframes heroMatch {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.3); background: #ff6b6b; }
+      100% { transform: scale(0); opacity: 0; }
+    }
+    
+    .hero-quote {
+      text-align: center;
+      font-style: italic;
+      color: #ff4500;
+      font-size: 1.1rem;
+      margin-top: 15px;
+      padding: 15px;
+      background: rgba(255,69,0,0.1);
+      border-radius: 10px;
+      border: 1px solid rgba(255,69,0,0.3);
+    }
+    
+    .hero-toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: linear-gradient(45deg, #ff4500, #00bfff);
+      color: #fff;
+      padding: 15px 20px;
+      border-radius: 10px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+      transform: translateX(400px);
+      transition: transform 0.3s ease;
+      z-index: 1000;
+      max-width: 300px;
+    }
+    
+    .hero-toast.show {
+      transform: translateX(0);
+    }
+    
+    .class-badge {
+      display: inline-block;
+      padding: 8px 15px;
+      border-radius: 20px;
+      font-weight: bold;
+      margin: 5px;
+    }
+    
+    .level-display {
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #ff4500;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    }
+    
+    .points-display {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #ff4500;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    }
+    
+    .calorie-estimate {
+      background: rgba(255,69,0,0.2);
+      border: 1px solid #ff4500;
+      border-radius: 8px;
+      padding: 10px;
+      margin-top: 10px;
+      font-weight: bold;
+      color: #ff4500;
+    }
+    
+    @media (max-width: 1600px) {
+      .main-container {
+        grid-template-columns: 1fr 1fr 1fr 350px;
+      }
+    }
+    
+    @media (max-width: 1200px) {
+      .main-container {
+        grid-template-columns: 1fr 1fr 1fr;
+      }
+    }
+    
+    @media (max-width: 900px) {
+      .main-container {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+    
+    @media (max-width: 768px) {
+      .main-container {
+        grid-template-columns: 1fr;
+      }
+      h1 { font-size: 2rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="cityscape" id="cityscape"></div>
+  
+  <header>
+    <h1 id="header-title">U.A. Hero Training Tracker 💥</h1>
+    <div class="subtitle">Plus Ultra! Train Like a True Hero</div>
+    <p>Track your daily nutrition, balance your energy intake (1800-2200 calories), earn hero points, and unlock legendary hero gear!</p>
+  </header>
+
+  <div class="main-container">
+    <!-- Food Input Section -->
+    <div class="hero-card">
+      <h2 class="card-title">🍱 Fuel Your Quirk</h2>
+      <p>Log what you've eaten to maintain peak hero performance! Proper nutrition is essential for quirk development!</p>
+      
+      <div class="input-group">
+        <select id="meal-time" class="hero-select">
+          <option value="Custom">Anytime Fuel</option>
+          <option value="Breakfast">Morning Hero Fuel</option>
+          <option value="Morning Snack">Pre-Training Snack</option>
+          <option value="Lunch">Midday Power Meal</option>
+          <option value="Afternoon Snack">Recovery Snack</option>
+          <option value="Dinner">Evening Hero Feast</option>
+          <option value="Late Snack">Late Night Fuel</option>
+        </select>
+      </div>
+      
+      <div class="input-group">
+        <input id="food-name" class="hero-input" placeholder="What did you eat? (e.g., grilled chicken, rice bowl, katsu)" />
+      </div>
+      
+      <div class="input-group">
+        <input id="food-calories" class="hero-input" placeholder="Calories (leave empty for auto-calculation)" type="number" />
+      </div>
+      
+      <div id="calorie-suggestion" class="calorie-estimate" style="display: none;"></div>
+      
+      <button id="estimate-btn" class="hero-btn">🔍 Calculate Calories</button>
+      <button id="add-btn" class="hero-btn">➕ Add to Training Log</button>
+    </div>
+
+    <!-- Fitness Tracking Section -->
+    <div class="hero-card">
+      <h2 class="card-title">💪 Hero Training Ground</h2>
+      <p>Track your training sessions and earn hero points for staying in peak condition!</p>
+      
+      <div class="input-group">
+        <select id="fitness-activity" class="hero-select">
+          <option value="Quirk Training">⚡ Quirk Training</option>
+          <option value="Combat Training">🥊 Combat Training</option>
+          <option value="Rescue Training">🚑 Rescue Training</option>
+          <option value="Obstacle Course">🏃 U.A. Obstacle Course</option>
+          <option value="Endurance Training">🏃‍♂️ Endurance Training</option>
+          <option value="Strength Training">🏋️ Strength Training</option>
+          <option value="Speed Training">💨 Speed Training</option>
+          <option value="Team Battle">👥 Team Battle Training</option>
+          <option value="Swimming Training">🏊 Swimming Training</option>
+          <option value="Strategy Training">🧠 Strategy Planning</option>
+          <option value="Other Training">🎯 Other Hero Training</option>
+        </select>
+      </div>
+      
+      <div class="input-group">
+        <input id="fitness-duration" class="hero-input" placeholder="Duration (minutes)" type="number" />
+      </div>
+      
+      <div class="input-group">
+        <select id="fitness-intensity" class="hero-select">
+          <option value="light">🌟 Light Training (Beginner)</option>
+          <option value="moderate">⚡ Moderate Training (Student)</option>
+          <option value="vigorous">🔥 Intense Training (Advanced)</option>
+          <option value="extreme">💥 All Might Level Training!</option>
+        </select>
+      </div>
+      
+      <button id="add-fitness-btn" class="hero-btn">💪 Log Training Session</button>
+      
+      <div id="fitness-points-display" style="margin-top: 15px; padding: 10px; background: rgba(255,69,0,0.1); border: 1px solid rgba(255,69,0,0.3); border-radius: 8px; text-align: center; color: #ff4500; font-weight: bold; display: none;">
+        <div>Session Points: <span id="session-points">0</span></div>
+        <div>Daily Training: <span id="daily-fitness">0</span> minutes</div>
+      </div>
+    </div>
+
+    <!-- Daily Log Section -->
+    <div class="hero-card">
+      <h2 class="card-title">📊 Today's Nutrition Log</h2>
+      <div id="feast-log" class="training-log"></div>
+      <div style="text-align: center; margin-top: 20px;">
+        <button id="clear-log" class="hero-btn">🌅 New Day Reset</button>
+      </div>
+    </div>
+
+    <!-- Fitness Log Section -->
+    <div class="hero-card">
+      <h2 class="card-title">🏋️‍♂️ Training Sessions</h2>
+      <div id="fitness-log" class="training-log"></div>
+      <div style="text-align: center; margin-top: 15px;">
+        <div style="color: #ff4500; font-weight: bold;">
+          <div>Today's Training: <span id="total-fitness-time">0</span> minutes</div>
+          <div>Training Points: <span id="total-fitness-points">0</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hero Training Game -->
+    <div class="hero-card">
+      <h2 class="card-title">🎮 Hero Symbol Match</h2>
+      <p>Match 3+ hero symbols to earn points!</p>
+      <div style="text-align: center; margin-bottom: 15px;">
+        <div><strong>Score:</strong> <span id="game-score">0</span> | <strong>Moves:</strong> <span id="moves-left">15</span></div>
+      </div>
+      
+      <div style="text-align: center;">
+        <div id="game-board" style="display: inline-block; background: rgba(0,0,0,0.5); padding: 15px; border-radius: 10px; border: 2px solid #ff4500;">
+          <!-- Game will load here -->
+        </div>
+        
+        <div style="margin-top: 15px;">
+          <button id="new-game" class="hero-btn" onclick="initGame()">🆕 New Game</button>
+          <button class="hero-btn" onclick="getGameHint()">💡 Hint (5 pts)</button>
+        </div>
+        <div id="game-status" style="color: #ff4500; margin-top: 10px; font-weight: bold;">Click New Game to start!</div>
+      </div>
+    </div>
+
+    <!-- Stats and Progress Sidebar -->
+    <div>
+      <!-- Quirk Meter -->
+      <div class="hero-card">
+        <h2 class="card-title">⚡ Daily Quirk Energy</h2>
+        <div class="quirk-meter">
+          <div id="magic-fill" class="quirk-fill"></div>
+        </div>
+        <p><strong>Total Energy:</strong> <span id="total-calories" class="points-display">0</span> calories</p>
+        <p><strong>Meals Logged:</strong> <span id="total-items">0</span></p>
+        <p id="status-message" class="status-good">Ready for hero training!</p>
+        <div id="motivation" class="hero-quote"></div>
+      </div>
+
+      <!-- Hero Points & Level -->
+      <div class="hero-card">
+        <h2 class="card-title">🏆 Hero Academy Rankings</h2>
+        <div id="house-selection" style="display: none;">
+          <p>🏫 Choose Your U.A. Class:</p>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0;">
+            <button class="hero-btn house-btn" data-house="Class 1-A">💥 Class 1-A</button>
+            <button class="hero-btn house-btn" data-house="Class 1-B">⚡ Class 1-B</button>
+            <button class="hero-btn house-btn" data-house="Class 2-A">🔥 Class 2-A</button>
+            <button class="hero-btn house-btn" data-house="Class 3-A">🌟 Class 3-A</button>
+          </div>
+        </div>
+        <div id="house-display">
+          <p><strong>Your Class:</strong> <span id="house-name" class="class-badge">Choose your class!</span></p>
+          <p><strong>Hero Points:</strong> <span id="house-points" class="points-display">0</span></p>
+          <p><strong>Hero Rank:</strong> <span id="wizard-level" class="level-display">Student (1)</span></p>
+          <button id="change-house" class="hero-btn" style="font-size: 0.8rem; padding: 5px 10px;">Change Class</button>
+        </div>
+        <button id="daily-bonus" class="hero-btn">💊 Daily Supplement (50 pts)</button>
+      </div>
+
+      <!-- Hero Gear Shop -->
+      <div class="hero-card">
+        <h2 class="card-title">🛒 Hero Gear Shop</h2>
+        <p>Exchange your hard-earned points for legendary hero equipment!</p>
+        <div id="trophy-shop" class="gear-grid"></div>
+      </div>
+
+      <!-- Gear Collection -->
+      <div class="hero-card">
+        <h2 class="card-title">🎒 Your Hero Gear</h2>
+        <p>Display your collection of hero equipment!</p>
+        <div id="trophy-case" class="owned-display"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Initialize city background
+    function createCityscape() {
+      const cityscape = document.getElementById('cityscape');
+      for (let i = 0; i < 50; i++) {
+        const building = document.createElement('div');
+        building.className = 'building';
+        building.style.left = Math.random() * 100 + '%';
+        building.style.top = Math.random() * 100 + '%';
+        building.style.animationDelay = Math.random() * 2 + 's';
+        cityscape.appendChild(building);
+      }
+    }
+    createCityscape();
+
+    // App state
+    let appState = {
+      totalCalories: 0,
+      totalItems: 0,
+      dailyLog: [],
+      fitnessLog: [],
+      heroPoints: parseInt(localStorage.getItem('heroPoints')) || 0,
+      heroLevel: parseInt(localStorage.getItem('heroLevel')) || 1,
+      selectedClass: localStorage.getItem('selectedClass') || null,
+      ownedGear: JSON.parse(localStorage.getItem('ownedGear')) || [],
+      lastDailyBonus: localStorage.getItem('lastDailyBonus') || '',
+      totalFitnessTime: 0,
+      totalFitnessPoints: 0
+    };
+
+    // Hero gear shop items
+    const heroGear = [
+      { id: 'costume', emoji: '🦸', name: 'Hero Costume', cost: 100 },
+      { id: 'mask', emoji: '🎭', name: 'Hero Mask', cost: 50 },
+      { id: 'cape', emoji: '🦸‍♂️', name: 'Hero Cape', cost: 75 },
+      { id: 'boots', emoji: '👢', name: 'Hero Boots', cost: 60 },
+      { id: 'gloves', emoji: '🧤', name: 'Hero Gloves', cost: 40 },
+      { id: 'belt', emoji: '⚡', name: 'Utility Belt', cost: 80 },
+      { id: 'communicator', emoji: '📱', name: 'Hero Communicator', cost: 120 },
+      { id: 'analyzer', emoji: '🔍', name: 'Quirk Analyzer', cost: 150 },
+      { id: 'medal', emoji: '🏅', name: 'Hero Medal', cost: 200 },
+      { id: 'shield', emoji: '🛡️', name: 'Hero Shield', cost: 180 },
+      { id: 'license', emoji: '🆔', name: 'Hero License', cost: 300 },
+      { id: 'trophy', emoji: '🏆', name: 'Championship Trophy', cost: 500 }
+    ];
+
+    // Hero quotes
+    const heroQuotes = [
+      "Plus Ultra! Push beyond your limits!",
+      "A true hero always finds a way to win!",
+      "The best heroes are those who help others!",
+      "Don't give up! Heroes never surrender!",
+      "Your quirk is what makes you special!",
+      "Train hard, eat well, become a hero!",
+      "Every meal is fuel for your hero journey!",
+      "Balance is key to quirk mastery!",
+      "Heroes take care of their bodies!",
+      "Nutrition is your secret weapon!"
+    ];
+
+    // Food calorie estimates
+    const foodCalories = {
+      'apple': 80, 'banana': 90, 'orange': 60, 'chicken': 250, 'beef': 300,
+      'rice': 150, 'bread': 80, 'pasta': 200, 'salmon': 200, 'tuna': 150,
+      'egg': 70, 'milk': 120, 'cheese': 100, 'yogurt': 100, 'salad': 50,
+      'pizza': 300, 'burger': 400, 'fries': 250, 'chocolate': 150, 'cake': 350,
+      'cookie': 100, 'ice cream': 200, 'soda': 140, 'coffee': 5, 'tea': 2,
+      'katsu': 400, 'ramen': 350, 'sushi': 200, 'onigiri': 180, 'bento': 450,
+      'tempura': 300, 'yakitori': 250, 'miso soup': 50, 'udon': 300, 'soba': 280
+    };
+
+    // Initialize app
+    function initApp() {
+      updateDisplay();
+      updateGearShop();
+      updateGearCase();
+      showRandomQuote();
+      checkClassSelection();
+      
+      // Load today's data from localStorage
+      const today = new Date().toDateString();
+      const savedData = localStorage.getItem('heroData_' + today);
+      if (savedData) {
+        const data = JSON.parse(savedData);
+        appState.dailyLog = data.dailyLog || [];
+        appState.fitnessLog = data.fitnessLog || [];
+        appState.totalCalories = data.totalCalories || 0;
+        appState.totalItems = data.totalItems || 0;
+        appState.totalFitnessTime = data.totalFitnessTime || 0;
+        appState.totalFitnessPoints = data.totalFitnessPoints || 0;
+        updateDisplay();
+        updateLogs();
+      }
+    }
+
+    function saveData() {
+      localStorage.setItem('heroPoints', appState.heroPoints);
+      localStorage.setItem('heroLevel', appState.heroLevel);
+      localStorage.setItem('selectedClass', appState.selectedClass);
+      localStorage.setItem('ownedGear', JSON.stringify(appState.ownedGear));
+      
+      // Save today's data
+      const today = new Date().toDateString();
+      const todayData = {
+        dailyLog: appState.dailyLog,
+        fitnessLog: appState.fitnessLog,
+        totalCalories: appState.totalCalories,
+        totalItems: appState.totalItems,
+        totalFitnessTime: appState.totalFitnessTime,
+        totalFitnessPoints: appState.totalFitnessPoints
+      };
+      localStorage.setItem('heroData_' + today, JSON.stringify(todayData));
+    }
+
+    function checkClassSelection() {
+      const selection = document.getElementById('house-selection');
+      const display = document.getElementById('house-display');
+      
+      if (!appState.selectedClass) {
+        selection.style.display = 'block';
+        display.style.display = 'none';
+      } else {
+        selection.style.display = 'none';
+        display.style.display = 'block';
+        updateClassDisplay();
+      }
+    }
+
+    function updateClassDisplay() {
+      const className = document.getElementById('house-name');
+      const heroLevel = document.getElementById('wizard-level');
+      
+      className.textContent = appState.selectedClass;
+      className.className = 'class-badge';
+      
+      const levelNames = ['Student', 'Trainee', 'Junior Hero', 'Hero', 'Pro Hero', 'Top Hero', 'Symbol of Peace'];
+      const levelIndex = Math.min(Math.floor(appState.heroLevel / 5), levelNames.length - 1);
+      heroLevel.textContent = `${levelNames[levelIndex]} (${appState.heroLevel})`;
+    }
+
+    function estimateCalories() {
+      const foodName = document.getElementById('food-name').value.toLowerCase();
+      const suggestion = document.getElementById('calorie-suggestion');
+      
+      let estimatedCalories = 0;
+      for (const [food, calories] of Object.entries(foodCalories)) {
+        if (foodName.includes(food)) {
+          estimatedCalories = calories;
+          break;
+        }
+      }
+      
+      if (estimatedCalories > 0) {
+        suggestion.textContent = `Estimated: ${estimatedCalories} calories`;
+        suggestion.style.display = 'block';
+        document.getElementById('food-calories').value = estimatedCalories;
+      } else {
+        suggestion.textContent = 'Food not found in database. Please enter calories manually.';
+        suggestion.style.display = 'block';
+      }
+    }
+
+    function addFood() {
+      const mealTime = document.getElementById('meal-time').value;
+      const foodName = document.getElementById('food-name').value.trim();
+      const calories = parseInt(document.getElementById('food-calories').value) || 0;
+      
+      if (!foodName || calories <= 0) {
+        showToast('Please enter food name and calories!');
+        return;
+      }
+      
+      const foodItem = {
+        time: mealTime,
+        name: foodName,
+        calories: calories,
+        timestamp: new Date().toLocaleTimeString()
+      };
+      
+      appState.dailyLog.push(foodItem);
+      appState.totalCalories += calories;
+      appState.totalItems++;
+      
+      // Award points
+      const points = Math.max(1, Math.floor(calories / 50));
+      appState.heroPoints += points;
+      
+      updateDisplay();
+      updateLogs();
+      saveData();
+      showToast(`Added ${foodName}! +${points} hero points!`);
+      
+      // Clear inputs
+      document.getElementById('food-name').value = '';
+      document.getElementById('food-calories').value = '';
+      document.getElementById('calorie-suggestion').style.display = 'none';
+    }
+
+    function addFitness() {
+      const activity = document.getElementById('fitness-activity').value;
+      const duration = parseInt(document.getElementById('fitness-duration').value) || 0;
+      const intensity = document.getElementById('fitness-intensity').value;
+      
+      if (duration <= 0) {
+        showToast('Please enter training duration!');
+        return;
+      }
+      
+      const intensityMultipliers = {
+        light: 1,
+        moderate: 1.5,
+        vigorous: 2,
+        extreme: 3
+      };
+      
+      const basePoints = Math.floor(duration / 5);
+      const sessionPoints = Math.floor(basePoints * intensityMultipliers[intensity]);
+      
+      const fitnessItem = {
+        activity: activity,
+        duration: duration,
+        intensity: intensity,
+        points: sessionPoints,
+        timestamp: new Date().toLocaleTimeString()
+      };
+      
+      appState.fitnessLog.push(fitnessItem);
+      appState.totalFitnessTime += duration;
+      appState.totalFitnessPoints += sessionPoints;
+      appState.heroPoints += sessionPoints;
+      
+      // Update displays
+      document.getElementById('session-points').textContent = sessionPoints;
+      document.getElementById('daily-fitness').textContent = duration;
+      document.getElementById('fitness-points-display').style.display = 'block';
+      
+      updateDisplay();
+      updateLogs();
+      saveData();
+      showToast(`Training logged! +${sessionPoints} hero points!`);
+      
+      // Clear inputs
+      document.getElementById('fitness-duration').value = '';
+    }
+
+    function updateLogs() {
+      // Update food log
+      const feastLog = document.getElementById('feast-log');
+      feastLog.innerHTML = appState.dailyLog.map(item => `
+        <div class="meal-item">
+          <div>
+            <strong>${item.time}</strong><br>
+            ${item.name}
+          </div>
+          <div style="text-align: right;">
+            <strong>${item.calories} cal</strong><br>
+            <small>${item.timestamp}</small>
+          </div>
+        </div>
+      `).join('');
+      
+      // Update fitness log
+      const fitnessLog = document.getElementById('fitness-log');
+      fitnessLog.innerHTML = appState.fitnessLog.map(item => `
+        <div class="meal-item">
+          <div>
+            <strong>${item.activity}</strong><br>
+            ${item.duration} min - ${item.intensity}
+          </div>
+          <div style="text-align: right;">
+            <strong>+${item.points} pts</strong><br>
+            <small>${item.timestamp}</small>
+          </div>
+        </div>
+      `).join('');
+      
+      // Update fitness totals
+      document.getElementById('total-fitness-time').textContent = appState.totalFitnessTime;
+      document.getElementById('total-fitness-points').textContent = appState.totalFitnessPoints;
+    }
+
+    function updateDisplay() {
+      document.getElementById('total-calories').textContent = appState.totalCalories;
+      document.getElementById('total-items').textContent = appState.totalItems;
+      document.getElementById('house-points').textContent = appState.heroPoints;
+      
+      // Update quirk meter
+      const fill = document.getElementById('magic-fill');
+      const percentage = Math.min((appState.totalCalories / 2000) * 100, 100);
+      fill.style.width = percentage + '%';
+      
+      // Update status message
+      const statusMsg = document.getElementById('status-message');
+      if (appState.totalCalories < 1200) {
+        statusMsg.textContent = 'Energy too low! Heroes need proper fuel!';
+        statusMsg.className = 'status-danger';
+      } else if (appState.totalCalories < 1800) {
+        statusMsg.textContent = 'Getting there! Keep fueling your quirk!';
+        statusMsg.className = 'status-warning';
+      } else if (appState.totalCalories <= 2200) {
+        statusMsg.textContent = 'Perfect energy levels! Hero ready!';
+        statusMsg.className = 'status-good';
+      } else {
+        statusMsg.textContent = 'Energy overflow! Consider some training!';
+        statusMsg.className = 'status-warning';
+      }
+      
+      // Check for level up
+      const newLevel = Math.floor(appState.heroPoints / 100) + 1;
+      if (newLevel > appState.heroLevel) {
+        appState.heroLevel = newLevel;
+        showToast(`Level Up! You're now Hero Level ${appState.heroLevel}!`);
+      }
+      
+      updateClassDisplay();
+    }
+
+    function updateGearShop() {
+      const shop = document.getElementById('trophy-shop');
+      shop.innerHTML = heroGear.map(gear => {
+        const owned = appState.ownedGear.includes(gear.id);
+        return `
+          <div class="gear-item ${owned ? 'gear-owned' : ''}" onclick="buyGear('${gear.id}')">
+            <span class="gear-emoji">${gear.emoji}</span>
+            <div style="font-size: 0.8rem; margin-bottom: 5px;">${gear.name}</div>
+            <div class="gear-cost">${owned ? 'OWNED' : gear.cost + ' pts'}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function updateGearCase() {
+      const gearCase = document.getElementById('trophy-case');
+      const owned = heroGear.filter(gear => appState.ownedGear.includes(gear.id));
+      
+      if (owned.length === 0) {
+        gearCase.innerHTML = '<p style="text-align: center; color: #666;">No hero gear yet. Visit the shop!</p>';
+      } else {
+        gearCase.innerHTML = owned.map(gear => `
+          <div class="owned-gear">
+            <div style="font-size: 2rem;">${gear.emoji}</div>
+            <div style="font-size: 0.8rem;">${gear.name}</div>
+          </div>
+        `).join('');
+      }
+    }
+
+    function buyGear(gearId) {
+      const gear = heroGear.find(g => g.id === gearId);
+      if (!gear || appState.ownedGear.includes(gearId)) return;
+      
+      if (appState.heroPoints >= gear.cost) {
+        appState.heroPoints -= gear.cost;
+        appState.ownedGear.push(gearId);
+        updateDisplay();
+        updateGearShop();
+        updateGearCase();
+        saveData();
+        showToast(`Purchased ${gear.name}! ${gear.emoji}`);
+      } else {
+        showToast(`Not enough hero points! Need ${gear.cost} points.`);
+      }
+    }
+
+    function clearLog() {
+      if (confirm('Start a new day? This will clear today\'s nutrition log.')) {
+        appState.dailyLog = [];
+        appState.fitnessLog = [];
+        appState.totalCalories = 0;
+        appState.totalItems = 0;
+        appState.totalFitnessTime = 0;
+        appState.totalFitnessPoints = 0;
+        updateDisplay();
+        updateLogs();
+        saveData();
+        showToast('New day started! Plus Ultra!');
+      }
+    }
+
+    function claimDailyBonus() {
+      const today = new Date().toDateString();
+      if (appState.lastDailyBonus === today) {
+        showToast('Daily supplement already claimed today!');
+        return;
+      }
+      
+      appState.heroPoints += 50;
+      appState.lastDailyBonus = today;
+      localStorage.setItem('lastDailyBonus', today);
+      updateDisplay();
+      saveData();
+      showToast('Daily supplement claimed! +50 hero points!');
+    }
+
+    function showRandomQuote() {
+      const motivation = document.getElementById('motivation');
+      const quote = heroQuotes[Math.floor(Math.random() * heroQuotes.length)];
+      motivation.textContent = `"${quote}"`;
+    }
+
+    function showToast(message) {
+      const existingToast = document.querySelector('.hero-toast');
+      if (existingToast) existingToast.remove();
+      
+      const toast = document.createElement('div');
+      toast.className = 'hero-toast';
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      
+      setTimeout(() => toast.classList.add('show'), 100);
+      setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    // Game implementation
+    let gameState = {
+      board: [],
+      score: 0,
+      movesLeft: 15,
+      selectedCell: null,
+      gameActive: false
+    };
+
+    const gameSymbols = ['💥', '⚡', '🔥', '💪', '🌟', '⭐'];
+
+    function initGame() {
+      gameState = {
+        board: [],
+        score: 0,
+        movesLeft: 15,
+        selectedCell: null,
+        gameActive: true
+      };
+      
+      // Create 8x8 board
+      for (let i = 0; i < 64; i++) {
+        gameState.board.push(gameSymbols[Math.floor(Math.random() * gameSymbols.length)]);
+      }
+      
+      renderGame();
+      updateGameDisplay();
+    }
+
+    function renderGame() {
+      const board = document.getElementById('game-board');
+      board.innerHTML = '';
+      
+      for (let i = 0; i < 64; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'game-cell';
+        cell.textContent = gameState.board[i];
+        cell.onclick = () => selectCell(i);
+        board.appendChild(cell);
+        
+        if ((i + 1) % 8 === 0) {
+          board.appendChild(document.createElement('br'));
+        }
+      }
+    }
+
+    function selectCell(index) {
+      if (!gameState.gameActive) return;
+      
+      const cells = document.querySelectorAll('.game-cell');
+      
+      if (gameState.selectedCell === null) {
+        gameState.selectedCell = index;
+        cells[index].classList.add('selected');
+      } else if (gameState.selectedCell === index) {
+        cells[index].classList.remove('selected');
+        gameState.selectedCell = null;
+      } else {
+        // Swap cells if adjacent
+        if (isAdjacent(gameState.selectedCell, index)) {
+          swapCells(gameState.selectedCell, index);
+          cells[gameState.selectedCell].classList.remove('selected');
+          gameState.selectedCell = null;
+          gameState.movesLeft--;
+          
+          setTimeout(() => {
+            checkMatches();
+            updateGameDisplay();
+            
+            if (gameState.movesLeft <= 0) {
+              endGame();
+            }
+          }, 300);
+        } else {
+          cells[gameState.selectedCell].classList.remove('selected');
+          gameState.selectedCell = index;
+          cells[index].classList.add('selected');
+        }
+      }
+    }
+
+    function isAdjacent(index1, index2) {
+      const row1 = Math.floor(index1 / 8);
+      const col1 = index1 % 8;
+      const row2 = Math.floor(index2 / 8);
+      const col2 = index2 % 8;
+      
+      return (Math.abs(row1 - row2) === 1 && col1 === col2) ||
+             (Math.abs(col1 - col2) === 1 && row1 === row2);
+    }
+
+    function swapCells(index1, index2) {
+      const temp = gameState.board[index1];
+      gameState.board[index1] = gameState.board[index2];
+      gameState.board[index2] = temp;
+      renderGame();
+    }
+
+    function checkMatches() {
+      const matches = findMatches();
+      if (matches.length > 0) {
+        gameState.score += matches.length * 10;
+        
+        // Animate matched cells
+        matches.forEach(index => {
+          const cells = document.querySelectorAll('.game-cell');
+          cells[index].classList.add('matched');
+        });
+        
+        setTimeout(() => {
+          // Remove matched symbols and drop new ones
+          matches.forEach(index => {
+            gameState.board[index] = gameSymbols[Math.floor(Math.random() * gameSymbols.length)];
+          });
+          renderGame();
+          
+          // Check for chain reactions
+          setTimeout(() => checkMatches(), 500);
+        }, 800);
+      }
+    }
+
+    function findMatches() {
+      const matches = new Set();
+      
+      // Check horizontal matches
+      for (let row = 0; row < 8; row++) {
+        for (let col = 0; col <= 5; col++) {
+          const index = row * 8 + col;
+          const symbol = gameState.board[index];
+          if (symbol === gameState.board[index + 1] && symbol === gameState.board[index + 2]) {
+            matches.add(index);
+            matches.add(index + 1);
+            matches.add(index + 2);
+          }
+        }
+      }
+      
+      // Check vertical matches
+      for (let col = 0; col < 8; col++) {
+        for (let row = 0; row <= 5; row++) {
+          const index = row * 8 + col;
+          const symbol = gameState.board[index];
+          if (symbol === gameState.board[index + 8] && symbol === gameState.board[index + 16]) {
+            matches.add(index);
+            matches.add(index + 8);
+            matches.add(index + 16);
+          }
+        }
+      }
+      
+      return Array.from(matches);
+    }
+
+    function updateGameDisplay() {
+      document.getElementById('game-score').textContent = gameState.score;
+      document.getElementById('moves-left').textContent = gameState.movesLeft;
+      
+      if (gameState.score > 0) {
+        document.getElementById('game-status').textContent = `Great job! Score: ${gameState.score}`;
+      }
+    }
+
+    function endGame() {
+      gameState.gameActive = false;
+      const bonusPoints = Math.floor(gameState.score / 10);
+      appState.heroPoints += bonusPoints;
+      updateDisplay();
+      saveData();
+      
+      document.getElementById('game-status').textContent = 
+        `Game Over! Final Score: ${gameState.score}. Earned ${bonusPoints} hero points!`;
+      showToast(`Game complete! +${bonusPoints} hero points!`);
+    }
+
+    function getGameHint() {
+      if (appState.heroPoints < 5) {
+        showToast('Need 5 hero points for a hint!');
+        return;
+      }
+      
+      appState.heroPoints -= 5;
+      updateDisplay();
+      saveData();
+      
+      const matches = findMatches();
+      if (matches.length > 0) {
+        showToast('Look for matching symbols in rows or columns!');
+      } else {
+        showToast('Try swapping adjacent symbols to create matches!');
+      }
+    }
+
+    // Event listeners
+    document.getElementById('estimate-btn').addEventListener('click', estimateCalories);
+    document.getElementById('add-btn').addEventListener('click', addFood);
+    document.getElementById('add-fitness-btn').addEventListener('click', addFitness);
+    document.getElementById('clear-log').addEventListener('click', clearLog);
+    document.getElementById('daily-bonus').addEventListener('click', claimDailyBonus);
+
+    // Class selection
+    document.querySelectorAll('.house-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        appState.selectedClass = e.target.dataset.house;
+        saveData();
+        checkClassSelection();
+        showToast(`Welcome to ${appState.selectedClass}!`);
+      });
+    });
+
+    document.getElementById('change-house').addEventListener('click', () => {
+      appState.selectedClass = null;
+      saveData();
+      checkClassSelection();
+    });
+
+    // Initialize app
+    initApp();
+    setInterval(showRandomQuote, 30000); // New quote every 30 seconds
+  </script>
+</body>
+</html>
